@@ -1,0 +1,69 @@
+version: "3"
+services:
+  nordvpn:
+    container_name: nordvpn
+    image: ghcr.io/bubuntux/nordvpn
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - USER=username
+      - "PASS=password"
+      - CONNECT=Netherlands
+      - TECHNOLOGY=NordLynx
+      - NETWORK=10.0.0.0/24
+      - KILLSWITCH=Enable
+    ports:
+      - 8080:8080
+      - 9117:9117
+      - 8989:8989
+      - 7878:7878
+    restart: always
+  qbittorrent:
+    image: ghcr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - WEBUI_PORT=8080
+    volumes:
+      - /home/robot/docker/qbittorrent/config:/config
+      - /home/robot/data/media/torrents:/data/media/torrents
+    network_mode: service:nordvpn
+    restart: always
+  jackett:
+    image: ghcr.io/linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - AUTO_UPDATE=true
+    volumes:
+      - /home/robot/docker/jackett/config:/config
+    network_mode: service:nordvpn
+    restart: always
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /home/robot/docker/sonarr/config:/config
+      - /home/robot/data:/data
+    network_mode: service:nordvpn
+    restart: always
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /home/robot/docker/radarr/config:/config
+      - /home/robot/data:/data
+    network_mode: service:nordvpn
+    restart: always

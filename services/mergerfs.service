@@ -1,0 +1,14 @@
+[Unit]
+Description=MergerFS Service
+ConditionPathIsMountPoint=/mnt/sdb/mergerfs/local
+Requires=rclone.service
+After=rclone.service
+
+[Service]
+Type=forking
+KillMode=process
+ExecStart=/usr/bin/mergerfs /mnt/sdb/mergerfs/local:/home/robot/mergerfs/mount /home/robot/data/media -o rw,use_ino,$KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

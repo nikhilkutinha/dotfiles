@@ -1,0 +1,41 @@
+[Unit]
+Description=RClone Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+Environment=RCLONE_CONFIG=/home/robot/.config/rclone/rclone.conf
+KillMode=none
+RestartSec=5
+ExecStart=/usr/bin/rclone mount GDrive-Media-1: /home/robot/mergerfs/mount \
+--allow-other \
+--dir-cache-time 5000h \
+--attr-timeout 5000h \
+--poll-interval 10s \
+--umask 002 \
+--user-agent rclone \
+--rc \
+--rc-addr :6969 \
+--rc-no-auth \
+--cache-dir=/mnt/sdb/cache \
+
+# The following option can be enabled for initial library scans to improve speed and save data.
+# --vfs-read-chunk-size 1M \
+
+--drive-pacer-min-sleep 10ms \
+--drive-pacer-burst 1000 \
+--vfs-cache-mode full \
+--vfs-cache-max-size 100G \
+--vfs-cache-max-age 24h \
+--vfs-cache-poll-interval 5m \
+--vfs-read-ahead 2G \
+--bwlimit-file 32M
+
+ExecStop=/bin/fusermount -uz /home/robot/mergerfs/mount
+Restart=on-failure
+User=robot
+Group=robot
+
+[Install]
+WantedBy=multi-user.target
