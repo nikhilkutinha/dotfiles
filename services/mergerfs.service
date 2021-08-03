@@ -7,7 +7,8 @@ After=rclone.service
 [Service]
 Type=forking
 KillMode=process
-ExecStart=/usr/bin/mergerfs /mnt/sdb/mergerfs/local:/home/robot/mergerfs/mount /home/robot/data/media -o rw,use_ino,$KillMode=process
+ExecStart=/usr/bin/mergerfs /mnt/sdb/mergerfs/local:/home/robot/mergerfs/mount /home/robot/data/media -o rw,use_ino,allow_other,func.getattr=newest,category.action=all,category.create=ff,cache.files=auto-full,dropcacheonclose=true
+
 Restart=on-failure
 
 [Install]
