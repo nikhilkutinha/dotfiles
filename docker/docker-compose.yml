@@ -1,36 +1,39 @@
-version: "3"
+version: '3.3'
 services:
-  nordvpn:
-    container_name: nordvpn
-    image: ghcr.io/bubuntux/nordvpn
-    cap_add:
-      - NET_ADMIN
-    environment:
-      - USER=username
-      - "PASS=password"
-      - CONNECT=Netherlands
-      - TECHNOLOGY=NordLynx
-      - NETWORK=10.0.0.0/24
-      - KILLSWITCH=Enable
+  qbittorrentvpn:
     ports:
-      - 8080:8080
-      - 9117:9117
-      - 8989:8989
-      - 7878:7878
-    restart: always
-  qbittorrent:
-    image: ghcr.io/linuxserver/qbittorrent
-    container_name: qbittorrent
+      - '6881:6881'
+      - '6881:6881/udp'
+      - '8080:8080'
+      - '8118:8118'
+      - '8989:8989'
+      - '7878:7878'
+      - '9117:9117'
+    container_name: qbittorrentvpn
+    privileged: true
+    sysctls:
+        - net.ipv4.conf.all.src_valid_mark=1
+    volumes:
+      - '/home/robot/data/media/torrents:/data/media/torrents'
+      - '/home/robot/docker/qbittorrentvpn/config:/config'
+      - '/etc/localtime:/etc/localtime:ro'
     environment:
+      - VPN_ENABLED=yes
+      - VPN_USER=user
+      - VPN_PASS=password
+      - VPN_PROV=pia
+      - VPN_CLIENT=wireguard
+      - STRICT_PORT_FORWARD=no
+      - ENABLE_PRIVOXY=yes
+      - LAN_NETWORK=10.0.0.0/24
+      - VPN_INPUT_PORTS=8989,7878,9117
+      - VPN_OUTPUT_PORTS=9117,32400
+      - DEBUG=false
+      - WEBUI_PORT=8080
+      - UMASK=000
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
-      - WEBUI_PORT=8080
-    volumes:
-      - /home/robot/docker/qbittorrent/config:/config
-      - /home/robot/data/media/torrents:/data/media/torrents
-    network_mode: service:nordvpn
-    restart: always
+    image: binhex/arch-qbittorrentvpn
   jackett:
     image: ghcr.io/linuxserver/jackett
     container_name: jackett
@@ -41,8 +44,10 @@ services:
       - AUTO_UPDATE=true
     volumes:
       - /home/robot/docker/jackett/config:/config
-    network_mode: service:nordvpn
+    network_mode: service:qbittorrentvpn
     restart: always
+    depends_on:
+      - qbittorrentvpn
   sonarr:
     image: ghcr.io/linuxserver/sonarr
     container_name: sonarr
@@ -53,8 +58,10 @@ services:
     volumes:
       - /home/robot/docker/sonarr/config:/config
       - /home/robot/data:/data
-    network_mode: service:nordvpn
+    network_mode: service:qbittorrentvpn
     restart: always
+    depends_on:
+      - qbittorrentvpn
   radarr:
     image: ghcr.io/linuxserver/radarr
     container_name: radarr
@@ -65,5 +72,40 @@ services:
     volumes:
       - /home/robot/docker/radarr/config:/config
       - /home/robot/data:/data
-    network_mode: service:nordvpn
+    network_mode: service:qbittorrentvpn
     restart: always
+    depends_on:
+      - qbittorrentvpn
+  swag:
+      image: lscr.io/linuxserver/swag
+      container_name: swag
+      cap_add:
+        - NET_ADMIN
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=India/Kolkata
+        - URL=domain
+        - VALIDATION=duckdns
+        - SUBDOMAINS=wildcard
+        - DUCKDNSTOKEN=token
+        - ONLY_SUBDOMAINS=false
+      volumes:
+        - /home/robot/docker/swag/config:/config
+      ports:
+        - 443:443
+        - 80:80
+      restart: unless-stopped
+  duckdns:
+    image: lscr.io/linuxserver/duckdns
+    container_name: duckdns
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Kolkata/India
+      - SUBDOMAINS=domain
+      - TOKEN=token
+      - LOG_FILE=false
+    volumes:
+      - /home/robot/docker/duckdns/config:/config
+    restart: unless-stopped
